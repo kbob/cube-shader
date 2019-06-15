@@ -3,11 +3,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <bcm_host.h>
+//#include <bcm_host.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
-#include "mpsse.h"
+#include "bcm.h"
+#include "leds.h"
 
 // There are four sizes here.
 //
@@ -169,6 +170,7 @@ int videocore_read_pixels(videocore_context *ctx,
 }
 #endif
 
+#if 0
 void init_mpsse(void)
 {
     int ifnum = 0;
@@ -256,6 +258,7 @@ void mpsse_await_vsync(void)
         //printf("%d\n", cmd_buf[0] | cmd_buf[1]);
     } while (((spi_buf[0] | spi_buf[1]) & 0x02) != 0x02);
 }
+#endif
 
 static const char *egl_error_string(const char *function, EGLint err)
 {
@@ -303,7 +306,7 @@ static const char *egl_error_string(const char *function, EGLint err)
     return buf;
 }
 
-const char *init_egl(const videocore_context *vc_ctx)
+const char *init_egl(bcm_context bctx)
 {
     EGLDisplay dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (dpy == EGL_NO_DISPLAY) {
@@ -345,9 +348,9 @@ const char *init_egl(const videocore_context *vc_ctx)
     }
 
     int native_window[] = {
-        vc_ctx->element,
-        vc_ctx->display_width,
-        vc_ctx->display_height
+        bcm_get_surface(bctx),
+        bcm_get_surface_width(bctx),
+        bcm_get_surface_height(bctx),
     };
     EGLSurface surface =
         eglCreateWindowSurface(dpy, config, native_window, NULL);
@@ -398,15 +401,15 @@ int main(int argc, char *argv[])
 
     // Initialize MPSSE.
     
-    init_mpsse();
+    init_LEDs(LED_WIDTH, LED_HEIGHT);
 
     // Initialize EGL.
 
-    err = init_egl(&vc_ctx);
-    if (err) {
-        fprintf(stderr, "init_egl: %s\n", err);
-        exit(1);
-    }
+    // err = init_egl(&vc_ctx);
+    // if (err) {
+    //     fprintf(stderr, "init_egl: %s\n", err);
+    //     exit(1);
+    // }
 
     return 0;
 }

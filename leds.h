@@ -1,18 +1,20 @@
 #ifndef LEDS_included
 #define LEDS_included
 
+#include <stddef.h>
 #include <stdint.h>
 
-typedef void *LED_context;
+typedef struct LED_context LED_context;
 
-extern LED_context init_LEDs(int framebuffer_height, int framebuffer_width);
-extern void finit_LEDs(LED_context);
+extern LED_context *init_LEDs(size_t framebuffer_height,
+                              size_t framebuffer_width);
+extern void finit_LEDs(LED_context *);
 
-extern size_t LEDs_best_buffer_size(LED_context);
-extern size_t LEDs_best_row_pitch(LED_context);
-extern size_t LEDs_best_row_offset(LED_context);
+extern size_t LEDs_best_buffer_size(const LED_context *);
+extern size_t LEDs_best_offset(const LED_context *);
+extern size_t LEDs_best_row_pitch(const LED_context *);
 
-extern void LEDs_put_pixels(LED_context,
+extern void LEDs_put_pixels(LED_context *,
                             uint16_t *pixel_buf,
                             size_t row_offset,
                             size_t row_pitch);

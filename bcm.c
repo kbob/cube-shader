@@ -128,31 +128,20 @@ bcm_context init_bcm(void)
 void finit_bcm(bcm_context bctx)
 {
     videocore_context *vctx = bctx;
-    dispmanx_resource_delete(vctx->resource);
-    dispmanx_element_remove(
+    vc_dispmanx_resource_delete(vctx->screen_resource);
     DISPMANX_UPDATE_HANDLE_T update = vc_dispmanx_update_start(0);
-    if (dispman_update != DISPMANX_NO_HANDLE) {
-        if (vc_dispmanx_element_remove(update, element) == 0) {
-            
+    if (update != DISPMANX_NO_HANDLE) {
+        if (vc_dispmanx_element_remove(update, vctx->element) == 0) {
+            (void)vc_dispmanx_update_submit_sync(update);
         }        
-
-    ctx->element = vc_dispmanx_element_add(dispman_update,
-                                           ctx->display,
-                                           layer, &dst_rect,
-                                           0, &src_rect,
-                                           DISPMANX_PROTECTION_NONE,
-                                           &alpha, 0, 0);
-    if (ctx->element == DISPMANX_NO_HANDLE) {
-        return "vc_dispmanx_element_add failed";
     }
-
-    if (vc_dispmanx_update_submit_sync(dispman_update) != 0) {
-        return "vc_dispmanx_update_submit_sync failed";
-    }
-    // destroy screen_resource
-    // destroy element
-    // destroy display
+    (void)vc_dispmanx_display_close(vctx->display);
     free(vctx);
+}
+
+const char *bcm_last_error(void)
+{
+    return last_error;
 }
 
 int bcm_get_surface_width(bcm_context bctx)
@@ -165,17 +154,20 @@ int bcm_get_surface_height(bcm_context bctx)
     return ((videocore_context *)bctx)->surface_height;
 }
 
-int bcm_get_framebuffer_width(bcm_context)
+int bcm_get_framebuffer_width(bcm_context bctx)
 {
     return FRAMEBUFFER_WIDTH;
 }
 
-int bcm_get_framebuffer_height(bcm_context)
+int bcm_get_framebuffer_height(bcm_context bctx)
 {
     return FRAMEBUFFER_HEIGHT;
 }
 
-// int bcm_get_surface(bcm_context);
+int bcm_get_surface(bcm_context bctx)
+{
+    return ((videocore_context *)bctx)->element;
+}
 
 // returns zero on success
 int bcm_read_pixels(bcm_context bctx,

@@ -19,4 +19,6 @@ extern int  bcm_read_pixels(bcm_context,
                             uint16_t *pixels,
                             uint16_t row_pitch);
 
+extern const char *bcm_last_error(void);
+
 #endif /* !BCM_included */
