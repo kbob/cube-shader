@@ -9,7 +9,7 @@
 
 #include "mpsse.h"
 
-// There are for sizes here.
+// There are four sizes here.
 //
 // display_height/width is the resolution of the HDMI output.
 //     It is set in /boot/config.txt and read from the VideoCore driver.
@@ -26,23 +26,18 @@
 #define VIEWPORT_WIDTH (6 * 64 * 2)
 #define VIEWPORT_HEIGHT (64 * 2)
 
-// #define FRAMEBUFFER_WIDTH (6 * 64)
-// #define FRAMEBUFFER_HEIGHT 64
-#define FRAMEBUFFER_WIDTH  (800 / 2) // XXX
-#define FRAMEBUFFER_HEIGHT (600 / 2) // XXX
-
 #define LED_WIDTH (6 * 64)
 #define LED_HEIGHT 64
 
 typedef void uniform_setter(GLuint prog, GLuint index, void *user_data);
 
-typedef struct videocore_context {
-    uint32_t                   display_width;
-    uint32_t                   display_height; 
-    DISPMANX_DISPLAY_HANDLE_T  display;
-    DISPMANX_ELEMENT_HANDLE_T  element;
-    DISPMANX_RESOURCE_HANDLE_T screen_resource;
-} videocore_context;
+// typedef struct videocore_context {
+//     uint32_t                   display_width;
+//     uint32_t                   display_height; 
+//     DISPMANX_DISPLAY_HANDLE_T  display;
+//     DISPMANX_ELEMENT_HANDLE_T  element;
+//     DISPMANX_RESOURCE_HANDLE_T screen_resource;
+// } videocore_context;
 
 typedef struct attrib_desc {
     const char    *name;
@@ -86,6 +81,7 @@ typedef struct uniform_desc {
 //     "}\n"
 //     ;
 
+#if 0
 // Return NULL on success; return error message on failure.
 // Error message may contain "%m" to reference errno.
 const char *init_videocore(videocore_context *ctx)
@@ -151,7 +147,9 @@ const char *init_videocore(videocore_context *ctx)
 
     return NULL;
 }
+#endif
 
+#if 0
 // Returns zero or positive on success.
 int videocore_read_pixels(videocore_context *ctx,
                            uint16_t pixel_buf[],
@@ -169,6 +167,7 @@ int videocore_read_pixels(videocore_context *ctx,
     }
     return r;
 }
+#endif
 
 void init_mpsse(void)
 {
@@ -370,9 +369,9 @@ void init_gl(void)
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
-GLuint gl_create_program(const char *fssrc, size_t fs_size)
-{
-}
+// GLuint gl_create_program(const char *fssrc, size_t fs_size)
+// {
+// }
 
 void gl_destroy_program(GLuint prog)
 {
@@ -387,16 +386,15 @@ void gl_render(GLuint prog);
 
 int main(int argc, char *argv[])
 {
-    // Initialize VideoCore.
-    videocore_context vc_ctx;
-    const char *err = init_videocore(&vc_ctx);
-    if (err) {
-        fprintf(stderr, "init_videocore: %s\n", err);
+    // Initialize BCM
+    bcm_context bcm = init_bcm();
+    if (!bcm) {
+        fprintf(stderr, "bcm: %s\n", bcm_last_error());
         exit(1);
     }
-
-    printf("display size %" PRIu32 "x%" PRIu32 "\n",
-           vc_ctx.display_width, vc_ctx.display_height);
+    int surface_width = bcm_get_surface_width(bcm);
+    int surface_height = bcm_get_surface_height(bcm);
+    printf("display size %dx%d\n", surface_width, surface_height);
 
     // Initialize MPSSE.
     
