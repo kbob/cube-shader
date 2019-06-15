@@ -3,15 +3,15 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <GLES2/gl2.h>
 
 struct glprog {
-    GLuint     prog;
-    GLuint     vshader;
-    GLuint     fshader;
-    bool       is_ok;
-    const char *error_msg;
+    GLuint  prog;
+    GLuint  frag_shader;
+    bool    is_ok;
+    char   *error_log;
 };
 
 static GLuint vertex_shader = 0;
@@ -46,7 +46,13 @@ static bool shader_is_ok(GLuint shader)
 glprog *create_glprog(const char *frag_shader_source, size_t source_size)
 {
     glprog *gpg = calloc(1, sizeof *gpg);
+    gpg->is_ok = true;
     gpg->prog = glCreateProgram();
+    if (!gpg->prog) {
+        gpg->is_ok = false;
+        gpg->error_log = strdup("glCreateProgram failed");
+        return gpg;
+    }
 
     if (vertex_shader == 0) {
         vertex_shader = create_shader(GL_VERTEX_SHADER,
@@ -57,18 +63,90 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
     }
     glAttachShader(gpg->prog, vertex_shader);
 
-    GLuint frag_shader = create_shader(GL_FRAGMENT_SHADER,
-                                       frag_shader_source,
-                                       source_size);
-    assert(frag_shader);
-    if (!shader_is_ok(frag_shader)) {
-        glDeleteProgram(gpg->prog);
-        free(gpg);
-        return NULL;
-    }
-    if (!frag_shader) {
+    gpg->frag_shader = create_shader(GL_FRAGMENT_SHADER,
+                                     frag_shader_source,
+                                     source_size);
+    assert(gpg->frag_shader);
+    glAttachShader(gpg->prog, gpg->frag_shader);
+    if (!shader_is_ok(gpg->frag_shader)) {
+        gpg->is_ok = false;
+        GLint len;
+        glGetShaderiv(gpg->frag_shader, GL_INFO_LOG_LENGTH, &len);
+        if (len > 0) {
+            gpg->error_log = malloc(len);
+            glGetShaderInfoLog(gpg->frag_shader, len, NULL, gpg->error_log);
+        }
+        return gpg;
     }
 
+    // Link program.
+
+    glLinkProgram(gpg->prog);
+    GLint link_status;
+    glGetProgramiv(gpg->prog, GL_LINK_STATUS, &link_status);
+    if (link_status != GL_TRUE) {
+        gpg->is_ok = false;
+        GLint len;
+        glGetProgramiv(gpg->prog, GL_INFO_LOG_LENGTH, &len);
+        if (len > 0) {
+            gpg->error_log = malloc(len);
+            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->error_log);
+        }
+        return gpg;
+    }
+
+    // Validate program.
+
+    glValidateProgram(gpg->prog);
+    GLint valid_status;
+    glGetProgramiv(gpg->prog, GL_VALIDATE_STATUS, &valid_status);
+    if (valid_status != GL_TRUE) {
+        gpg->is_ok = false;
+        GLint len;
+        glGetProgramiv(gpg->prog, GL_INFO_LOG_LENGTH, &len);
+        if (len > 0) {
+            gpg->error_log = malloc(len);
+            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->error_log);
+        }
+        return gpg;
+    }
+    
+
     return gpg;
+}
+
+void destroy_glprog(glprog *gpg)
+{
+    if (gpg->frag_shader)
+        glDeleteShader(gpg->frag_shader);
+    if (gpg->prog)
+        glDeleteProgram(gpg->prog);
+    free(gpg->error_log);
+    free(gpg);
+}
+
+bool glprog_is_ok(const glprog *gpg)
+{
+    return gpg->is_ok;
+}
+
+const char *glprog_get_error_log(const glprog *gpg)
+{
+    return gpg->error_log;
+}
+
+GLuint glprog_get_program(glprog *gpg)
+{
+    return gpg->prog;
+}
+
+GLuint glprog_get_vertex_shader(glprog *gpg)
+{
+    return vertex_shader;
+}
+
+GLuint glprog_get_fragment_shader(glprog *gpg)
+{
+    return gpg->frag_shader;
 }
 

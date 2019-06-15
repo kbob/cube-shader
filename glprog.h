@@ -1,26 +1,20 @@
 #ifndef GLPROG_included
 #define GLPROG_included
 
+#include <stdbool.h>
 #include <stddef.h>
 
-// create prog w/ shader
-// check ok
-// get error
-// destroy prog
-
-// register_uniform(name, type, size, setter)
-// register_attribute(name, type, size, setter)
-
-// prog_set_uniforms(user_data)
-
-// prog_set_uniform(name, user_data)
-// prog_set_attributes(user_data)
-
-// get uniforms
-// get attributes
+#include <GLES2/gl2.h>
 
 typedef struct glprog glprog;
 
-glprog *create_glprog(const char *frag_shader_source, size_t source_size);
+extern glprog *create_glprog(const char *frag_shader_source,
+                             size_t source_size);
+extern void destroy_glprog(glprog *);
+extern bool glprog_is_ok(const glprog *);
+extern const char *glprog_error_log(const glprog *);
+extern GLuint glprog_get_program(glprog *);
+extern GLuint glprog_get_vertex_shader(glprog *);
+extern GLuint glprog_get_fragment_shader(glprog *);
 
 #endif /* !GLPROG_included */

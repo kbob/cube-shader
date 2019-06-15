@@ -127,6 +127,7 @@ bcm_context init_bcm(void)
 
 void finit_bcm(bcm_context bctx)
 {
+    assert(0 && "This function has not been tested.");
     videocore_context *vctx = bctx;
     vc_dispmanx_resource_delete(vctx->screen_resource);
     DISPMANX_UPDATE_HANDLE_T update = vc_dispmanx_update_start(0);
