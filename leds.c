@@ -9,7 +9,7 @@
 #define FRONT_PORCH_BYTES 8
 #define BACK_PORCH_BYTES 14
 
-struct LED_context {
+struct LEDs_context {
     size_t led_width;
     size_t led_height;
     size_t best_offset;
@@ -17,14 +17,14 @@ struct LED_context {
     size_t best_buffer_size;
 };
 
-LED_context *init_LEDs(size_t led_width, size_t led_height)
+LEDs_context *init_LEDs(size_t led_width, size_t led_height)
 {
     int ifnum = 0;
     const char *devstr = NULL;
     bool slow_clock = false;
     mpsse_init(ifnum, devstr, slow_clock);
 
-    LED_context *ctx = calloc(1, sizeof *ctx);
+    LEDs_context *ctx = calloc(1, sizeof *ctx);
     ctx->led_width = led_width;
     ctx->led_height = led_height;
     ctx->best_offset = FRONT_PORCH_BYTES;
@@ -35,17 +35,17 @@ LED_context *init_LEDs(size_t led_width, size_t led_height)
     return ctx;
 }
 
-size_t LEDs_best_buffer_size(const LED_context *ctx)
+size_t LEDs_best_buffer_size(const LEDs_context *ctx)
 {
     return ctx->best_buffer_size;
 }
 
-size_t LEDs_best_offset(const LED_context *ctx)
+size_t LEDs_best_offset(const LEDs_context *ctx)
 {
     return ctx->best_offset;
 }
 
-size_t LEDs_best_row_pitch(const LED_context *ctx)
+size_t LEDs_best_row_pitch(const LEDs_context *ctx)
 {
     return ctx->best_row_pitch;
 }
@@ -58,10 +58,10 @@ static void set_cs(int cs_b)
 }
 
 
-void LED_put_pixels(LED_context *ctx,
-                    uint16_t *pixels,
-                    size_t row_offset,
-                    size_t row_pitch)
+void LEDs_write_pixels(LEDs_context *ctx,
+                       uint16_t *pixels,
+                       size_t row_offset,
+                       size_t row_pitch)
 {
     const size_t ROW_OVERHEAD = 21;
     const size_t ROW_SIZE = ctx->led_width * sizeof *pixels;
@@ -122,7 +122,7 @@ void LED_put_pixels(LED_context *ctx,
     set_cs(1);
 }
 
-void LED_await_vsync(LED_context *ctx)
+void LEDs_await_vsync(LEDs_context *ctx)
 {
     uint8_t spi_buf[2];
     do {

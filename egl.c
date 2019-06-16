@@ -130,9 +130,9 @@ EGL_context *init_EGL(uint32_t native_surface,
         surface_width,
         surface_height,
     };
-    EGLSurface surface =
+    ctx->surface =
         eglCreateWindowSurface(ctx->display, config, native_window, NULL);
-    if (surface == EGL_NO_SURFACE) {
+    if (ctx->surface == EGL_NO_SURFACE) {
         last_error = egl_error_string("eglCreateWindowSurface", eglGetError());
         eglDestroyContext(ctx->display, ctx->context);
         eglTerminate(ctx->display);
@@ -141,8 +141,8 @@ EGL_context *init_EGL(uint32_t native_surface,
     }
 
     if (eglMakeCurrent(ctx->display,
-                       surface,
-                       surface,
+                       ctx->surface,
+                       ctx->surface,
                        ctx->context) == EGL_FALSE) {
         last_error = egl_error_string("eglMakeCurrent", eglGetError());
         eglDestroyContext(ctx->display, ctx->context);
@@ -159,5 +159,7 @@ EGL_context *init_EGL(uint32_t native_surface,
 
 void EGL_swap_buffers(EGL_context *ctx)
 {
+        // printf("eglSwapBuffers(dpy=%p, surface=%p)\n",
+        //        ctx->display, ctx->surface);
         eglSwapBuffers(ctx->display, ctx->surface);
 }
