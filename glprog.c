@@ -111,7 +111,6 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
         return gpg;
     }
     
-
     return gpg;
 }
 

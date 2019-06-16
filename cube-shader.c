@@ -372,10 +372,6 @@ void init_gl(void)
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
-// GLuint gl_create_program(const char *fssrc, size_t fs_size)
-// {
-// }
-
 void gl_destroy_program(GLuint prog)
 {
     // destroy attachments
