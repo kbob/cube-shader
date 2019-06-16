@@ -12,7 +12,7 @@ extern glprog *create_glprog(const char *frag_shader_source,
                              size_t source_size);
 extern void destroy_glprog(glprog *);
 extern bool glprog_is_ok(const glprog *);
-extern const char *glprog_error_log(const glprog *);
+extern const char *glprog_get_error_log(const glprog *);
 extern GLuint glprog_get_program(glprog *);
 extern GLuint glprog_get_vertex_shader(glprog *);
 extern GLuint glprog_get_fragment_shader(glprog *);

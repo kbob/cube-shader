@@ -18,6 +18,7 @@ static GLuint vertex_shader = 0;
 
 static const char *vertex_shader_source =
     "attribute vec3 vert;\n"
+    "varying vec2 fragCoord;\n"
     "\n"
     "void main(void) {\n"
     "    gl_Position = vec4(vert, 1.0);\n"
@@ -111,6 +112,24 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
         return gpg;
     }
     
+//XXX
+#include <stdio.h>
+    // Look at attributes.
+
+    GLuint prog = gpg->prog;
+    GLint attr_count;
+    GLint max_attr_len;
+    glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTES, &attr_count);
+    glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_attr_len);
+    printf("%d attribute%s\n", attr_count, "s" + (attr_count == 1));
+    for (int i = 0; i < attr_count; i++) {
+        char name[max_attr_len];
+        GLint size;
+        GLenum type;
+        glGetActiveAttrib(prog, i, sizeof name, NULL, &size, &type, name);
+        printf("    %d %#x %s\n", size, type, name);
+    }
+//XXX
     return gpg;
 }
 
