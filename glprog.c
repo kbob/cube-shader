@@ -16,7 +16,7 @@ struct glprog {
 
 static GLuint vertex_shader = 0;
 
-static const char *vertex_shader_source =
+static const char vertex_shader_source[] =
     "attribute vec3 vert;\n"
     "varying vec2 fragCoord;\n"
     "\n"
@@ -62,13 +62,11 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
         assert(vertex_shader);
         assert(shader_is_ok(vertex_shader));
     }
-    glAttachShader(gpg->prog, vertex_shader);
 
     gpg->frag_shader = create_shader(GL_FRAGMENT_SHADER,
                                      frag_shader_source,
                                      source_size);
     assert(gpg->frag_shader);
-    glAttachShader(gpg->prog, gpg->frag_shader);
     if (!shader_is_ok(gpg->frag_shader)) {
         gpg->is_ok = false;
         GLint len;
@@ -82,6 +80,9 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
 
     // Link program.
 
+    glAttachShader(gpg->prog, vertex_shader);
+    glAttachShader(gpg->prog, gpg->frag_shader);
+    glBindAttribLocation(gpg->prog, 0, "vert");
     glLinkProgram(gpg->prog);
     GLint link_status;
     glGetProgramiv(gpg->prog, GL_LINK_STATUS, &link_status);
@@ -112,24 +113,24 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
         return gpg;
     }
     
-//XXX
-#include <stdio.h>
-    // Look at attributes.
+// //XXX
+// #include <stdio.h>
+//     // Look at attributes.
 
-    GLuint prog = gpg->prog;
-    GLint attr_count;
-    GLint max_attr_len;
-    glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTES, &attr_count);
-    glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_attr_len);
-    printf("%d attribute%s\n", attr_count, "s" + (attr_count == 1));
-    for (int i = 0; i < attr_count; i++) {
-        char name[max_attr_len];
-        GLint size;
-        GLenum type;
-        glGetActiveAttrib(prog, i, sizeof name, NULL, &size, &type, name);
-        printf("    %d %#x %s\n", size, type, name);
-    }
-//XXX
+//     GLuint prog = gpg->prog;
+//     GLint attr_count;
+//     GLint max_attr_len;
+//     glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTES, &attr_count);
+//     glGetProgramiv(prog, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_attr_len);
+//     printf("%d attribute%s\n", attr_count, "s" + (attr_count == 1));
+//     for (int i = 0; i < attr_count; i++) {
+//         char name[max_attr_len];
+//         GLint size;
+//         GLenum type;
+//         glGetActiveAttrib(prog, i, sizeof name, NULL, &size, &type, name);
+//         printf("    %d %#x %s\n", size, type, name);
+//     }
+// //XXX
     return gpg;
 }
 

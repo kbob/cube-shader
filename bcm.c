@@ -48,8 +48,8 @@ static const char *init_videocore(videocore_context *ctx)
         return "vc_dispmanx_display_open failed";
     }
 
-    DISPMANX_UPDATE_HANDLE_T dispman_update = vc_dispmanx_update_start(0);
-    if (dispman_update == DISPMANX_NO_HANDLE) {
+    DISPMANX_UPDATE_HANDLE_T update = vc_dispmanx_update_start(0);
+    if (update == DISPMANX_NO_HANDLE) {
         return "vc_dispmanx_update_start failed";
     }
 
@@ -68,7 +68,24 @@ static const char *init_videocore(videocore_context *ctx)
         .height        = VIEWPORT_HEIGHT,
     };
     VC_DISPMANX_ALPHA_T alpha = { DISPMANX_FLAGS_ALPHA_PREMULT, 0, 0 };
-    ctx->element = vc_dispmanx_element_add(dispman_update,
+
+    // printf("\n");
+    // printf("vc_dispmanx_element_add(\n");
+    // printf("        update=%#x,\n", update);
+    // printf("        display=%#x,\n", ctx->display);
+    // printf("        layer=%d,\n", layer);
+    // printf("        dest_rect={%d, %d, %d, %d},\n",
+    //        dst_rect.x, dst_rect.y, dst_rect.width, dst_rect.height);
+    // printf("        src=0,\n");
+    // printf("        src_rect={%d, %d, %#x, %#x},\n",
+    //        src_rect.x, src_rect.y, src_rect.width, src_rect.height);
+    // printf("        protection=%d\n", DISPMANX_PROTECTION_NONE);
+    // printf("        alpha={%d, 0, 0},\n", DISPMANX_FLAGS_ALPHA_PREMULT);
+    // printf("        clamp=0,\n");
+    // printf("        transform=0);\n");
+    // printf("\n");
+
+    ctx->element = vc_dispmanx_element_add(update,
                                            ctx->display,
                                            layer, &dst_rect,
                                            0, &src_rect,
@@ -78,7 +95,7 @@ static const char *init_videocore(videocore_context *ctx)
         return "vc_dispmanx_element_add failed";
     }
 
-    if (vc_dispmanx_update_submit_sync(dispman_update) != 0) {
+    if (vc_dispmanx_update_submit_sync(update) != 0) {
         return "vc_dispmanx_update_submit_sync failed";
     }
 
@@ -99,10 +116,24 @@ static int videocore_read_pixels(videocore_context *ctx,
                                  size_t word_pitch)
 {
 
-    VC_RECT_T rect;
+    static VC_RECT_T rect;
     vc_dispmanx_rect_set(&rect, 0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
     int r = vc_dispmanx_snapshot(ctx->display, ctx->screen_resource, 0);
+    assert(r >= 0);             // XXX
     if (r >= 0) {
+        // static int been_here;
+        // if (!been_here) {
+        //     been_here = 1;
+        //     printf("\n");
+        //     printf("vc_dispmanx_resource_read_data(\n");
+        //     printf("        handle=%#x,\n", ctx->screen_resource);
+        //     printf("        rect={%d, %d, %d, %d},\n",
+        //            rect.x, rect.y, rect.width, rect.height);
+        //     printf("        dst_address=%p,\n", pixel_buf);
+        //     printf("        dst_pitch=%u);\n", word_pitch * sizeof *pixel_buf);
+        //     printf("\n");
+        // }
+        
         r = vc_dispmanx_resource_read_data(ctx->screen_resource,
                                            &rect,
                                            pixel_buf,

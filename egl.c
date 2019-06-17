@@ -8,6 +8,7 @@ struct EGL_context {
     EGLDisplay display;
     EGLContext context;
     EGLSurface surface;
+    int        native_window[3];
 };
 
 static __thread char *last_error;
@@ -125,13 +126,15 @@ EGL_context *init_EGL(uint32_t native_surface,
         return NULL;
     }
 
-    int native_window[] = {
-        native_surface,
-        surface_width,
-        surface_height,
-    };
+    // static int native_window[3];
+    // native_window[0] = native_surface;
+    // native_window[1] = surface_width;
+    // native_window[2] = surface_height;
+    ctx->native_window[0] = native_surface;
+    ctx->native_window[1] = surface_width;
+    ctx->native_window[2] = surface_height;
     ctx->surface =
-        eglCreateWindowSurface(ctx->display, config, native_window, NULL);
+        eglCreateWindowSurface(ctx->display, config, ctx->native_window, NULL);
     if (ctx->surface == EGL_NO_SURFACE) {
         last_error = egl_error_string("eglCreateWindowSurface", eglGetError());
         eglDestroyContext(ctx->display, ctx->context);

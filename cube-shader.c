@@ -67,29 +67,14 @@ typedef struct uniform_desc {
 // };
 // static const size_t uniform_count = (&uniform_descs)[1] - uniform_descs;
 
-static GLfloat vVertices[] = {
+static GLfloat vertices[] = {
      0.000f, +0.500f,  0.0f,
     -0.433f, -0.250f,  0.0f,
     +0.433f, -0.250f,  0.0f
 };
+static size_t vertex_count = (&vertices)[1] - vertices;
 
-// void init_gl(void)
-// {
-//     glClearColor(0.0, 0.0, 0.0, 1.0);
-// }
-
-// void gl_destroy_program(GLuint prog)
-// {
-//     // destroy attachments
-//     // enumerate shaders
-//     // detach shaders
-//     // destroy fragment shader
-//     // destroy program
-// }
-
-// void gl_render(GLuint prog);
-
-static const GLchar fssrc[] =
+static const GLchar fssrc[] =   // XXX
     "precision mediump float;\n"
     "\n"
     "void main()\n"
@@ -110,12 +95,7 @@ int main(int argc, char *argv[])
     uint32_t bcm_surface = bcm_get_surface(bcm);
     uint32_t surface_width = bcm_get_surface_width(bcm);
     uint32_t surface_height = bcm_get_surface_height(bcm);
-    printf("bcm_surface = %#x\n", bcm_surface);
     printf("surface size %dx%d\n", surface_width, surface_height);
-
-    // Initialize LEDs.
-
-    LEDs_context *leds = init_LEDs(LED_WIDTH, LED_HEIGHT);
 
     // Initialize EGL.
 
@@ -125,13 +105,16 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // const char *err = init_egl(bcm);
-    // if (err) {
-    //     fprintf(stderr, "init_egl: %s\n", err);
-    //     exit(1);
-    // }
+    // Initialize LEDs.
 
-    glClearColor(0., 0., 0., 1.);
+    LEDs_context *leds = init_LEDs(LED_WIDTH, LED_HEIGHT);
+    leds = leds;                // XXX
+
+    size_t pb_width = surface_width / 2;
+    size_t pb_height = surface_height / 2;
+    uint16_t pixel_buffer[pb_width * pb_height];
+    
+    glClearColor(0.0, 0.0, 0.0, 1.0);
 
     glprog *prog = create_glprog(fssrc, sizeof fssrc - 1);
     if (!glprog_is_ok(prog)) {
@@ -140,12 +123,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    glUseProgram(glprog_get_program(prog));
-
-    size_t pb_width = surface_width / 2;
-    size_t pb_height = surface_height / 2;
-    uint16_t pixel_buffer[pb_width * pb_height];
-    
     // Get attrib indices
     GLint vert_index = glGetAttribLocation(glprog_get_program(prog), "vert");
     GLint vert_size;
@@ -158,31 +135,32 @@ int main(int argc, char *argv[])
                       &vert_size,
                       &vert_type,
                       vert_name);
-    // printf("vert index=%d size=%d type=%#X name=\"%s\"\n",
-    //        vert_index, vert_size, vert_type, vert_name);
     assert(vert_size == 1 && vert_type == GL_FLOAT_VEC3);
 
     // Get uniform indices
 
-    for (int frame = 0; frame < 1200; frame++) {
+    glUseProgram(glprog_get_program(prog));
+    glVertexAttribPointer(vert_index, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(0);
+
+    for (int frame = 0; frame < 120; frame++) {
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(glprog_get_program(prog));
-        glVertexAttribPointer(vert_index, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
         for (int vp = 0; vp < 6; vp++) {
             glViewport(128 * vp, 0, 128, 128);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawArrays(GL_TRIANGLES, 0, vertex_count);
         }
+
         // Update uniforms
         // Update attributes
         
         EGL_swap_buffers(egl);
-        if (bcm_read_pixels(bcm, pixel_buffer, pb_width)) {
+
+        if (bcm_read_pixels(bcm, pixel_buffer, pb_width) != 0) {
             fprintf(stderr, "bcm_read_pixels failed\n");
             exit(1);
         }
+
         size_t offset = pb_width * (pb_height - LED_HEIGHT);
-        // printf("pb_width = %d, pb_height = %d, LED_HEIGHT = %d, offset = %d\n",
-        //        pb_width, pb_height, LED_HEIGHT, offset);
         LEDs_write_pixels(leds, pixel_buffer + offset, 0, pb_width);
     }
 

@@ -66,6 +66,7 @@ void LEDs_write_pixels(LEDs_context *ctx,
     const size_t ROW_OVERHEAD = 21;
     const size_t ROW_SIZE = ctx->led_width * sizeof *pixels;
     const size_t CB_SIZE = ctx->led_height * (ROW_SIZE + ROW_OVERHEAD) ;
+    assert(CB_SIZE < 65536);
     uint8_t cmd_buf[CB_SIZE];
     size_t cmd_idx = 0;
     
