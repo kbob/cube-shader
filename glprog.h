@@ -6,10 +6,11 @@
 
 #include <GLES2/gl2.h>
 
+#include "str-array.h"
+
 typedef struct glprog glprog;
 
-extern glprog *create_glprog(const char *frag_shader_source,
-                             size_t source_size);
+extern glprog *create_glprog(const str_array *frag_shader_source);
 extern void destroy_glprog(glprog *);
 extern bool glprog_is_ok(const glprog *);
 extern const char *glprog_get_error_log(const glprog *);

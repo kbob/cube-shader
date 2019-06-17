@@ -86,6 +86,7 @@ EGL_context *init_EGL(uint32_t native_surface,
         free(ctx);
         return NULL;
     }
+    // fprintf(stderr, "This is EGL %d.%d\n", major, minor);
 
     static const EGLint attribute_list[] = {
         EGL_RED_SIZE, 8,

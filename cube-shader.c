@@ -10,6 +10,8 @@
 #include "egl.h"
 #include "glprog.h"
 #include "leds.h"
+#include "strbuf.h"
+#include "str-array.h"
 
 // There are four sizes here.
 //
@@ -68,23 +70,63 @@ typedef struct uniform_desc {
 // static const size_t uniform_count = (&uniform_descs)[1] - uniform_descs;
 
 static GLfloat vertices[] = {
-     0.000f, +0.500f,  0.0f,
-    -0.433f, -0.250f,  0.0f,
-    +0.433f, -0.250f,  0.0f
+    -1.0, -1.0, 0.0,
+    +1.0, -1.0, 0.0,
+    -1.0, +1.0, 0.0,
+    +1.0, +1.0, 0.0,
 };
-static size_t vertex_count = (&vertices)[1] - vertices;
+static size_t vertex_count = ((&vertices)[1] - vertices) / 3;
 
-static const GLchar fssrc[] =   // XXX
-    "precision mediump float;\n"
-    "\n"
-    "void main()\n"
-    "{\n"
-    "    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-    "    gl_FragColor = vec4(gl_FragCoord.xyz, 1.0);\n"
-    "}\n"
-    ;
+// static const GLchar fssrc[] =   // XXX
+//     "#line 1000\n"
+//     "vec3 cube_map_to_3d(vec2 pos) {\n"
+//     "    vec3 p = vec3(0);\n"
+//     "    if (pos.x < 128.0) {\n"
+//     "        // top\n"
+//     "        p = vec3(1.0 - pos.y / 128.0,\n"
+//     "                 1.0,\n"
+//     "                 pos.x / 128.0);\n"
+//     "    } else if (pos.x < 256.0) {\n"
+//     "        // back\n"
+//     "        p = vec3(1.0 - pos.y / 128.0,\n"
+//     "                 1.0 - (pos.x - 128.0) / 128.0,\n"
+//     "                 1.0);\n"
+//     "    } else if (pos.x < 384.0) {\n"
+//     "        // bottom\n"
+//     "        p = vec3(1.0 - pos.y / 128.0,\n"
+//     "                 0.0,\n"
+//     "                 1.0 - (pos.x - 256.0) / 128.0);\n"
+//     "    } else if (pos.x < 512.0) {\n"
+//     "        // right\n"
+//     "        p = vec3(1.0,\n"
+//     "                 1.0 - pos.y / 128.0,\n"
+//     "                 1.0 - (pos.x - 384.0) / 128.0);\n"
+//     "    } else if (pos.x < 640.0) {\n"
+//     "        // front\n"
+//     "        p = vec3(1.0 - (pos.x - 512.0) / 128.0,\n"
+//     "                 1.0 - pos.y / 128.0,\n"
+//     "                 0.0);\n"
+//     "    } else if (pos.x < 768.0) {\n"
+//     "        // left\n"
+//     "        p = vec3(0,\n"
+//     "                 1.0 - pos.y / 128.0,\n"
+//     "                 (pos.x - 640.0) / 128.0);\n"
+//     "    }\n"
+//     "    return p - 0.5;\n"
+//     "}\n"
+//     "\n"
+//     "void mainCube(out vec4 fragColor, in vec3 fragCoord) {\n"
+//     "        fragColor.rgb = fragCoord.rgb + .5;\n"
+//     "}\n"
+//     "\n"
+//     "#ifndef _EMULATOR\n"
+//     "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n"
+//     "    mainCube(fragColor, cube_map_to_3d(fragCoord));\n"
+//     "}\n"
+//     "#endif\n"
+//     ;
 
-int main(int argc, char *argv[])
+static void main_loop(const str_array *fragment_shader_array)
 {
     // Initialize BCM
     bcm_context bcm = init_bcm();
@@ -114,9 +156,9 @@ int main(int argc, char *argv[])
     size_t pb_height = surface_height / 2;
     uint16_t pixel_buffer[pb_width * pb_height];
     
-    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClearColor(0.5, 0.0, 1.0, 1.0);
 
-    glprog *prog = create_glprog(fssrc, sizeof fssrc - 1);
+    glprog *prog = create_glprog(fragment_shader_array);
     if (!glprog_is_ok(prog)) {
         fprintf(stderr, "Program is not OK\n");
         fprintf(stderr, "%s\n", glprog_get_error_log(prog));
@@ -143,12 +185,10 @@ int main(int argc, char *argv[])
     glVertexAttribPointer(vert_index, 3, GL_FLOAT, GL_FALSE, 0, vertices);
     glEnableVertexAttribArray(0);
 
-    for (int frame = 0; frame < 120; frame++) {
+    for (int frame = 0; frame < 1200 * 10; frame++) {
+     glViewport(0, 0, 128 * 6, 128);
         glClear(GL_COLOR_BUFFER_BIT);
-        for (int vp = 0; vp < 6; vp++) {
-            glViewport(128 * vp, 0, 128, 128);
-            glDrawArrays(GL_TRIANGLES, 0, vertex_count);
-        }
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
 
         // Update uniforms
         // Update attributes
@@ -163,6 +203,45 @@ int main(int argc, char *argv[])
         size_t offset = pb_width * (pb_height - LED_HEIGHT);
         LEDs_write_pixels(leds, pixel_buffer + offset, 0, pb_width);
     }
+}
 
+static const char *prog_name;
+
+void usage(FILE *f)
+{
+    fprintf(f, "Use: %s [shader]\n", prog_name);
+    exit(f == stderr);
+}
+
+
+str_array *str_array_from_strbuf(strbuf buf)
+{
+    str_array *sa = create_str_array();
+    str_array_append(sa, strbuf_contents(buf), strbuf_size(buf));
+    return sa;
+}
+
+int main(int argc, char *argv[])
+{
+    prog_name = argv[0];
+    strbuf shader_buf = NULL;
+    if (argc == 2) {
+        FILE *f = fopen(argv[1], "r");
+        if (!f) {
+            fprintf(stderr, "Can't open ");
+            perror(argv[1]);
+            exit(1);
+        }
+        shader_buf = strbuf_read_file(f);
+        fclose(f);
+    } else if (argc == 1) {
+        shader_buf = strbuf_read_file(stdin);
+    } else {
+        usage(stderr);
+    }
+    str_array *shader_array = str_array_from_strbuf(shader_buf);
+    main_loop(shader_array);
+    destroy_str_array(shader_array);
+    destroy_strbuf(shader_buf);
     return 0;
 }

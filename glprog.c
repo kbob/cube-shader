@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,22 +17,55 @@ struct glprog {
 
 static GLuint vertex_shader = 0;
 
-static const char vertex_shader_source[] =
+static const char *vertex_shader_source =
     "attribute vec3 vert;\n"
-    "varying vec2 fragCoord;\n"
     "\n"
     "void main(void) {\n"
     "    gl_Position = vec4(vert, 1.0);\n"
     "}\n"
     ;
 
+static const char frag_shader_prologue[] =
+    "uniform vec3 iResolution;\n"
+    "uniform float iTime;\n"
+    "uniform float iTimeDelta;\n"
+    "uniform float iFrame;\n"
+    "uniform float iChannelTime[4];\n"
+    "uniform vec4 iMouse;\n"
+    "uniform vec4 iDate;\n"
+    "uniform float iSampleRate;\n"
+    "uniform vec3 iChannelResolution[4];\n"
+    ;
+
+static const char frag_shader_epilogue[] =
+    "void main() {\n"
+    "    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+    "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+    "    gl_FragColor.a = 1.0;\n"
+    "}\n"
+    ;
+
+static str_array *build_frag_source_array(const str_array *source)
+{
+    str_array *sources = create_str_array();
+    str_array_append(sources,
+                     frag_shader_prologue,
+                     sizeof frag_shader_prologue - 1);
+    str_array_extend(sources, source);
+    str_array_append(sources,
+                     frag_shader_epilogue,
+                     sizeof frag_shader_epilogue - 1);
+    return sources;
+}
+
 static GLuint create_shader(GLenum shader_type,
-                            const char *source,
-                            GLint source_size)
+                            size_t source_count,
+                            const char **source_strings,
+                            const GLint *source_lengths)
 {
     GLuint shader = glCreateShader(shader_type);
     if (shader) {
-        glShaderSource(shader, 1, &source, &source_size);
+        glShaderSource(shader, source_count, source_strings, source_lengths);
         glCompileShader(shader);
     }
     return shader;
@@ -44,7 +78,7 @@ static bool shader_is_ok(GLuint shader)
     return status == GL_TRUE;
 }
 
-glprog *create_glprog(const char *frag_shader_source, size_t source_size)
+glprog *create_glprog(const str_array *fragment_shader_source)
 {
     glprog *gpg = calloc(1, sizeof *gpg);
     gpg->is_ok = true;
@@ -56,16 +90,26 @@ glprog *create_glprog(const char *frag_shader_source, size_t source_size)
     }
 
     if (vertex_shader == 0) {
+        GLint lengths[1] = {-1};
         vertex_shader = create_shader(GL_VERTEX_SHADER,
-                                      vertex_shader_source,
-                                      -1); 
+                                      1,
+                                      &vertex_shader_source,
+                                      lengths); 
         assert(vertex_shader);
         assert(shader_is_ok(vertex_shader));
     }
 
+    str_array *frag_sources = build_frag_source_array(fragment_shader_source);
+    printf("----------\n");
+    print_str_array(frag_sources, stdout);
+    printf("----------\n");
+
     gpg->frag_shader = create_shader(GL_FRAGMENT_SHADER,
-                                     frag_shader_source,
-                                     source_size);
+                                     frag_sources->count,
+                                     frag_sources->strings,
+                                     frag_sources->lengths);
+    destroy_str_array(frag_sources);
+
     assert(gpg->frag_shader);
     if (!shader_is_ok(gpg->frag_shader)) {
         gpg->is_ok = false;
