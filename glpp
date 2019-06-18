@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+
+match_pragma = re.compile(r'\s*#\s*pragma\s+')
+match_use = re.compile(r'\s*#\s*pragma\s+use\s*"(.*)"$', re.MULTILINE).match
+
+def preprocess(path, seen):
+    # print('seen = %r' % seen)
+    path = os.path.abspath(path)
+    seen.append(path)
+    # print('# line 1 "%s"' % path)
+    with open(path) as f:
+        for line in f:
+            m = match_use(line)
+            if m:
+                sub_path = m.group(1)
+                if not os.path.isabs(sub_path):
+                    sub_path = os.path.join(os.path.dirname(path), sub_path)
+                sub_path = os.path.normpath(sub_path)
+                if sub_path not in seen:
+                    preprocess(sub_path, seen)
+            else:
+                print(line, end='')
+                pass
+
+def main(argv):
+    seen = []
+    for f in argv[1:]:
+        preprocess(f, seen);
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

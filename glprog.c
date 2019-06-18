@@ -100,9 +100,9 @@ glprog *create_glprog(const str_array *fragment_shader_source)
     }
 
     str_array *frag_sources = build_frag_source_array(fragment_shader_source);
-    printf("----------\n");
-    print_str_array(frag_sources, stdout);
-    printf("----------\n");
+    // printf("----------\n");
+    // print_str_array(frag_sources, stdout);
+    // printf("----------\n");
 
     gpg->frag_shader = create_shader(GL_FRAGMENT_SHADER,
                                      frag_sources->count,
