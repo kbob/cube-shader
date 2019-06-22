@@ -1,0 +1,5 @@
+#!/bin/sh
+
+BINDIR="$HOME/cube-shader"
+
+"$BINDIR/glpp" ${1+"$@"} | "$BINDIR/cube-shader"

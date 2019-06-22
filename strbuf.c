@@ -54,7 +54,6 @@ size_t strbuf_size(strbuf buf)
 
 strbuf strbuf_read_file(FILE *f)
 {
-    
     char bytes[1024];
     size_t n;
     strbuf buf = create_strbuf();

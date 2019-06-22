@@ -44,3 +44,45 @@ void print_str_array(const str_array * array, FILE *f)
         }
     }
 }
+
+bool str_array_first_line(const str_array  *arr,
+                          str_array_cursor *start,
+                          str_array_cursor *end)
+{
+    end->array  = arr;
+    end->chunk  = 0;
+    end->offset = 0;
+    end->ptr    = arr->strings[0];
+    return str_array_next_line(start, end);
+}
+
+bool str_array_next_line(str_array_cursor *start, str_array_cursor *end)
+{
+    const str_array *arr    = end->array;
+    size_t           chunk  = end->chunk;
+    size_t           offset = end->offset;
+    const char      *str    = arr->strings[chunk];
+    size_t           len    = arr->lengths[chunk];
+    if (len < 0 ? !str[offset] : offset >= len) {
+        chunk++;
+        if (chunk >= arr->count) {
+            return false;
+        }
+        str = arr->strings[chunk];
+        len = arr->lengths[chunk];
+    }
+    while (len < 0 ? str[offset] : offset < len) {
+        if (str[offset] == '\n') {
+            break;
+        }
+        str++;
+        offset++;
+    }
+
+    *start      = *end;
+    end->chunk  = chunk;
+    end->offset = offset;
+    end->ptr    = arr->strings[chunk] + offset;
+    return true;
+}
+

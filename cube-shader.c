@@ -10,6 +10,7 @@
 #include "egl.h"
 #include "glprog.h"
 #include "leds.h"
+#include "preproc.h"
 #include "strbuf.h"
 #include "str-array.h"
 
@@ -77,55 +78,6 @@ static GLfloat vertices[] = {
 };
 static size_t vertex_count = ((&vertices)[1] - vertices) / 3;
 
-// static const GLchar fssrc[] =   // XXX
-//     "#line 1000\n"
-//     "vec3 cube_map_to_3d(vec2 pos) {\n"
-//     "    vec3 p = vec3(0);\n"
-//     "    if (pos.x < 128.0) {\n"
-//     "        // top\n"
-//     "        p = vec3(1.0 - pos.y / 128.0,\n"
-//     "                 1.0,\n"
-//     "                 pos.x / 128.0);\n"
-//     "    } else if (pos.x < 256.0) {\n"
-//     "        // back\n"
-//     "        p = vec3(1.0 - pos.y / 128.0,\n"
-//     "                 1.0 - (pos.x - 128.0) / 128.0,\n"
-//     "                 1.0);\n"
-//     "    } else if (pos.x < 384.0) {\n"
-//     "        // bottom\n"
-//     "        p = vec3(1.0 - pos.y / 128.0,\n"
-//     "                 0.0,\n"
-//     "                 1.0 - (pos.x - 256.0) / 128.0);\n"
-//     "    } else if (pos.x < 512.0) {\n"
-//     "        // right\n"
-//     "        p = vec3(1.0,\n"
-//     "                 1.0 - pos.y / 128.0,\n"
-//     "                 1.0 - (pos.x - 384.0) / 128.0);\n"
-//     "    } else if (pos.x < 640.0) {\n"
-//     "        // front\n"
-//     "        p = vec3(1.0 - (pos.x - 512.0) / 128.0,\n"
-//     "                 1.0 - pos.y / 128.0,\n"
-//     "                 0.0);\n"
-//     "    } else if (pos.x < 768.0) {\n"
-//     "        // left\n"
-//     "        p = vec3(0,\n"
-//     "                 1.0 - pos.y / 128.0,\n"
-//     "                 (pos.x - 640.0) / 128.0);\n"
-//     "    }\n"
-//     "    return p - 0.5;\n"
-//     "}\n"
-//     "\n"
-//     "void mainCube(out vec4 fragColor, in vec3 fragCoord) {\n"
-//     "        fragColor.rgb = fragCoord.rgb + .5;\n"
-//     "}\n"
-//     "\n"
-//     "#ifndef _EMULATOR\n"
-//     "void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n"
-//     "    mainCube(fragColor, cube_map_to_3d(fragCoord));\n"
-//     "}\n"
-//     "#endif\n"
-//     ;
-
 static void main_loop(const str_array *fragment_shader_array)
 {
     // Initialize BCM
@@ -161,7 +113,7 @@ static void main_loop(const str_array *fragment_shader_array)
     glprog *prog = create_glprog(fragment_shader_array);
     if (!glprog_is_ok(prog)) {
         fprintf(stderr, "Program is not OK\n");
-        fprintf(stderr, "%s\n", glprog_get_error_log(prog));
+        fprintf(stderr, "%s\n", glprog_get_info_log(prog));
         exit(1);
     }
 
@@ -185,7 +137,7 @@ static void main_loop(const str_array *fragment_shader_array)
     glVertexAttribPointer(vert_index, 3, GL_FLOAT, GL_FALSE, 0, vertices);
     glEnableVertexAttribArray(0);
 
-    for (int frame = 0; frame < 1200 * 10; frame++) {
+    for (int frame = 0; frame < 120; frame++) {
      glViewport(0, 0, 128 * 6, 128);
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
@@ -232,10 +184,18 @@ int main(int argc, char *argv[])
             perror(argv[1]);
             exit(1);
         }
+#if 0
         shader_buf = strbuf_read_file(f);
+#else
+        read_shader(f);
+#endif
         fclose(f);
     } else if (argc == 1) {
+#if 0
         shader_buf = strbuf_read_file(stdin);
+#else
+        read_shader(stdin);
+#endif
     } else {
         usage(stderr);
     }

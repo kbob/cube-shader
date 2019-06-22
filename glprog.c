@@ -12,7 +12,7 @@ struct glprog {
     GLuint  prog;
     GLuint  frag_shader;
     bool    is_ok;
-    char   *error_log;
+    char   *info_log;
 };
 
 static GLuint vertex_shader = 0;
@@ -25,36 +25,16 @@ static const char *vertex_shader_source =
     "}\n"
     ;
 
-static const char frag_shader_prologue[] =
-    "uniform vec3 iResolution;\n"
-    "uniform float iTime;\n"
-    "uniform float iTimeDelta;\n"
-    "uniform float iFrame;\n"
-    "uniform float iChannelTime[4];\n"
-    "uniform vec4 iMouse;\n"
-    "uniform vec4 iDate;\n"
-    "uniform float iSampleRate;\n"
-    "uniform vec3 iChannelResolution[4];\n"
-    ;
-
-static const char frag_shader_epilogue[] =
-    "void main() {\n"
-    "    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
-    "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
-    "    gl_FragColor.a = 1.0;\n"
-    "}\n"
-    ;
-
 static str_array *build_frag_source_array(const str_array *source)
 {
     str_array *sources = create_str_array();
-    str_array_append(sources,
-                     frag_shader_prologue,
-                     sizeof frag_shader_prologue - 1);
+    // str_array_append(sources,
+    //                  frag_shader_prologue,
+    //                  sizeof frag_shader_prologue - 1);
     str_array_extend(sources, source);
-    str_array_append(sources,
-                     frag_shader_epilogue,
-                     sizeof frag_shader_epilogue - 1);
+    // str_array_append(sources,
+    //                  frag_shader_epilogue,
+    //                  sizeof frag_shader_epilogue - 1);
     return sources;
 }
 
@@ -85,7 +65,7 @@ glprog *create_glprog(const str_array *fragment_shader_source)
     gpg->prog = glCreateProgram();
     if (!gpg->prog) {
         gpg->is_ok = false;
-        gpg->error_log = strdup("glCreateProgram failed");
+        gpg->info_log = strdup("glCreateProgram failed");
         return gpg;
     }
 
@@ -116,8 +96,8 @@ glprog *create_glprog(const str_array *fragment_shader_source)
         GLint len;
         glGetShaderiv(gpg->frag_shader, GL_INFO_LOG_LENGTH, &len);
         if (len > 0) {
-            gpg->error_log = malloc(len);
-            glGetShaderInfoLog(gpg->frag_shader, len, NULL, gpg->error_log);
+            gpg->info_log = malloc(len);
+            glGetShaderInfoLog(gpg->frag_shader, len, NULL, gpg->info_log);
         }
         return gpg;
     }
@@ -135,8 +115,8 @@ glprog *create_glprog(const str_array *fragment_shader_source)
         GLint len;
         glGetProgramiv(gpg->prog, GL_INFO_LOG_LENGTH, &len);
         if (len > 0) {
-            gpg->error_log = malloc(len);
-            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->error_log);
+            gpg->info_log = malloc(len);
+            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->info_log);
         }
         return gpg;
     }
@@ -151,8 +131,8 @@ glprog *create_glprog(const str_array *fragment_shader_source)
         GLint len;
         glGetProgramiv(gpg->prog, GL_INFO_LOG_LENGTH, &len);
         if (len > 0) {
-            gpg->error_log = malloc(len);
-            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->error_log);
+            gpg->info_log = malloc(len);
+            glGetProgramInfoLog(gpg->prog, len, NULL, gpg->info_log);
         }
         return gpg;
     }
@@ -184,7 +164,7 @@ void destroy_glprog(glprog *gpg)
         glDeleteShader(gpg->frag_shader);
     if (gpg->prog)
         glDeleteProgram(gpg->prog);
-    free(gpg->error_log);
+    free(gpg->info_log);
     free(gpg);
 }
 
@@ -193,9 +173,9 @@ bool glprog_is_ok(const glprog *gpg)
     return gpg->is_ok;
 }
 
-const char *glprog_get_error_log(const glprog *gpg)
+const char *glprog_get_info_log(const glprog *gpg)
 {
-    return gpg->error_log;
+    return gpg->info_log;
 }
 
 GLuint glprog_get_program(glprog *gpg)
